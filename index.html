@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <link rel="stylesheet" href="style.css">
+  <title>Voice Notes App</title>
+</head>
+<body>
+  <div class="bg-container">
+    <div class="app-container"> 
+      <header>
+        <h1>Voice Notes App</h1>
+      </header>
+      <main class="sm-notes">
+        <section class="searchBar">
+          <input type="text" placeholder="Search notes...">
+          <i class="fas fa-search"></i>
+        </section>
+        <section class="notesContainer">
+          <div class="newNotePreviewContainer hide">
+            <div class="newNotePreviewHeader">
+              <h2>New Note</h2>
+              <div>
+                <button class="newNoteSaveBtn" disabled><i class="fa-solid fa-floppy-disk"></i></button>
+                <button class="newNoteCancelBtn"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            </div>
+            <p class="newNotePreviewText">Speak now...</p>
+          </div>
+          <ul class="notesList">
+          </ul>
+        </section>
+
+      </main>
+      <footer>
+        <button class="addBtn" id="mic"><i class="fa-solid fa-bars"></i>
+        </button>
+      </footer>
+    </div>
+    <main class="md-notes">
+      <section class="searchBar">
+        <input type="text" placeholder="Search notes...">
+        <i class="fas fa-search"></i>
+      </section>
+      <section class="notesContainer">
+        <div class="newNotePreviewContainer hide">
+          <div class="newNotePreviewHeader">
+            <h2>New Note</h2>
+            <div>
+              <button class="newNoteSaveBtn" disabled><i class="fa-solid fa-floppy-disk"></i></button>
+              <button class="newNoteCancelBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <p class="newNotePreviewText">Speak now...</p>
+        </div>
+        <ul class="notesList">
+        </ul>
+      </section>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
