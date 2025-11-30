@@ -156,8 +156,12 @@ function UpdateNoteListItems() {
       const id = parseInt(item.dataset.id);
       const notesData = JSON.parse(localStorage.getItem('notesData'));
       const note = notesData.find(n => n.id === id);
+
       note.text = newP.textContent;
-      notesData[id] = note;
+
+      const index = notesData.findIndex(n => n.id === id);
+      notesData[index] = note;
+      
       localStorage.setItem('notesData', JSON.stringify(notesData));
     });
 
@@ -199,110 +203,133 @@ initializeNotes();
 // Speech Recognition Setup
 const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
-recognition.lang = 'en-US';          // Set language to English (US)
-recognition.interimResults = true;   // Enable interim results for real-time transcription
-recognition.continuous = true;       // Keep recognition active until stopped manually
+recognition.lang = 'en-US';
+recognition.interimResults = true;
+recognition.continuous = false;
 
-// Variable to track if a note is being edited
-let activeEditNote = null;
-// Variable to store final transcript
+// Variables to track recognition state
+let activeEditNote = false;
+let finalTranscript = '';
+let isRecognitionRunning = false;
+
+
 const mic = document.getElementById('mic');
+
 // Event listener for microphone button click to start voice recognition
 mic.addEventListener('click', () => {
-  activeEditNote = true;
-  if(activeEditNote) {
-    // Show new note preview container and start recognition
-    const newNotePreviewContainers = document.querySelectorAll('.newNotePreviewContainer');
-    newNotePreviewContainers.forEach(container => {
-      container.classList.remove('hide');
-    });
-
-    // Start speech recognition
-    recognition.start();
-    recognition.onstart = () => {
-      finalTranscript = "";
-    };
-
-    // Log message indicating that recognition has started
-    console.log('Voice recognition started. Speak into the microphone.');
-  }
+  startRecognition();
 });
+
+
+function startRecognition() {
+  activeEditNote = true;
+  isRecognitionRunning = true;
+
+  // Show new note preview container
+  document.querySelectorAll('.newNotePreviewContainer')
+    .forEach(container => container.classList.remove('hide'));
+
+  // Start speech recognition
+  recognition.start();
+  console.log('Voice recognition started. Speak into the microphone.');
+}
+
+
+function stopRecognition() {
+  activeEditNote = false;
+  isRecognitionRunning = false;
+  finalTranscript = '';
+
+  recognition.stop();
+
+  // Hide preview container
+  document.querySelectorAll('.newNotePreviewContainer')
+    .forEach(container => container.classList.add('hide'));
+  document.querySelectorAll('.newNotePreviewText')
+    .forEach(textElement => textElement.textContent = 'Speak now...');
+    
+  console.log('Voice recognition stopped.');
+}
+
 
 // Event listener for speech recognition results
 recognition.onresult = (event) => {
-  // Get all new note preview text elements and save buttons
-  const newNotePreviewTexts = document.querySelectorAll('.newNotePreviewText');
-  const newNoteSaveBtns = document.querySelectorAll('.newNoteSaveBtn');
+  let interimTranscript = '';
 
-  // Enable save buttons when there is a result
-  newNoteSaveBtns.forEach(btn => {
-    btn.disabled = false;
-  });
+  // Enable save buttons
+  document.querySelectorAll('.newNoteSaveBtn').forEach(btn => btn.disabled = false);
 
-  // Compile the transcript from the recognition results
-  const transcript = Array.from(event.results)
-    .map(result => result[0].transcript)
-    .join(' ');
+  // Process results
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    const text = event.results[i][0].transcript;
+
+    if (event.results[i].isFinal) {
+      finalTranscript += text + " ";
+    } else {
+      interimTranscript += text;
+    }
+  }
+
+  const combined = finalTranscript + interimTranscript;
 
   // Update the new note preview text elements with the transcript
   if (activeEditNote) {    
-    // there is two newNotePreviewText like one for small screen and one for large screen thats why using forEach to update both
-    newNotePreviewTexts.forEach(textElement => {
-      textElement.textContent = transcript;
-    });
-
-    // Log the transcribed text for debugging
-    console.log('Transcribed Text:', transcript);
+    document.querySelectorAll('.newNotePreviewText').forEach(t =>t.textContent = combined);
+    console.log('Transcribed Text:', combined);
   }
 }
 
+recognition.onend = () => {
+  console.log("Recognition ended.");
+  if (isRecognitionRunning) {
+    // prevent duplication
+    finalTranscript = "";
+    recognition.start();
+  }
+};
+
+
+
 // Event listener for newNotePreviewContainer click to save the new note
-const newNoteSaveBtn = document.querySelectorAll('.newNoteSaveBtn');
-// because of two newNotePreviewContainer one for small screen and one for large screen we are using forEach to add event listener to both
-newNoteSaveBtn.forEach(btn => {
+document.querySelectorAll('.newNoteSaveBtn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const notesData = JSON.parse(localStorage.getItem('notesData'));
-    const newNotePreviewTexts = document.querySelectorAll('.newNotePreviewText');
-    
-    const id = Date.now();
-    const dateTime = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-    const text = newNotePreviewTexts[0].textContent.trim();
-    let newNote = { id, dateTime, text };
-    notesData.push(newNote);
-    localStorage.setItem('notesData', JSON.stringify(notesData));
-    initializeNotes();
+    const preview = document.querySelector('.newNotePreviewText');
+    const text = preview.textContent.trim();
 
-    const newNotePreviewContainers = document.querySelectorAll('.newNotePreviewContainer');
-    // newNotePreviewText.textContent = 'Speak now...';
-    newNotePreviewContainers.forEach(container => {
-      container.classList.add('hide');
-    });
-     newNotePreviewTexts.forEach(textElement => {
-      textElement.textContent = 'Speak now...';
-    });
-    activeEditNote = null;
-    recognition.stop();
-    console.log('Voice recognition stopped.');
-});
-});
+    if(text) {
+      const notesData = JSON.parse(localStorage.getItem('notesData')); 
+      const id = Date.now();
+      const dateTime = new Date().toLocaleString('en-GB', { 
+        day: '2-digit',
+        month: 'short', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: true 
+      });
+      
+      const newNote = { id, dateTime, text };
+      notesData.push(newNote);
+      localStorage.setItem('notesData', JSON.stringify(notesData));
+      initializeNotes();
 
-
-
-// Event listener for newNoteCancelBtn click to cancel the new note, Also foreach used because of two buttons for small and large screens
-const newNoteCancelBtns = document.querySelectorAll('.newNoteCancelBtn');
-newNoteCancelBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const newNotePreviewContainers = document.querySelectorAll('.newNotePreviewContainer');
-    const newNotePreviewTexts = document.querySelectorAll('.newNotePreviewText');
-    
-    newNotePreviewContainers.forEach(container => {
-      container.classList.add('hide');
-    });
-    newNotePreviewTexts.forEach(textElement => {
-      textElement.textContent = 'Speak now...';
-    });
-    activeEditNote = null;
-    recognition.stop();
-    console.log('Voice recognition stopped.');
+      finalTranscript = '';
+    }
+    stopRecognition();
   });
+});
+
+
+
+// Event listener for newNoteCancelBtn
+document.querySelectorAll('.newNoteCancelBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    stopRecognition();
+  });
+});
+
+window.addEventListener('beforeunload', () => {
+  if(activeEditNote) {
+    recognition.stop();
+  }
 });
